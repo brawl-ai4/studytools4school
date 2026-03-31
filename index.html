@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>StudyTools4School</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #03040a;
+  --neon: #00e5ff;
+  --neon2: #7c3aed;
+  --neon3: #06ffa5;
+  --text: #c8f0ff;
+  --glass: rgba(6,15,35,0.72);
+  --border: rgba(0,229,255,0.18);
+  --card-h: 260px;
+}
+
+/* ─── RESET ─── */
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+html, body { height:100%; background:var(--bg); color:var(--text); font-family:'Rajdhani', sans-serif; overflow-x:hidden; }
+
+/* ─── STARFIELD ─── */
+#stars { position:fixed; inset:0; z-index:0; pointer-events:none; }
+
+/* ─── SCANLINE OVERLAY ─── */
+body::after {
+  content:''; position:fixed; inset:0; z-index:1;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,229,255,0.015) 2px, rgba(0,229,255,0.015) 4px);
+  pointer-events:none;
+}
+
+/* ─── GRID BG ─── */
+body::before {
+  content:''; position:fixed; inset:0; z-index:0;
+  background-image:
+    linear-gradient(rgba(0,229,255,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,229,255,0.04) 1px, transparent 1px);
+  background-size: 60px 60px;
+  pointer-events:none;
+}
+
+/* ─── PASSWORD OVERLAY ─── */
+#lock-overlay {
+  position:fixed; inset:0; z-index:9000;
+  background: radial-gradient(ellipse at center, #03070f 0%, #000 100%);
+  display:flex; align-items:center; justify-content:center;
+  flex-direction:column; gap:0;
+}
+.lock-box {
+  position:relative;
+  background: linear-gradient(135deg, rgba(0,229,255,0.07), rgba(124,58,237,0.07));
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 48px 42px 42px;
+  width: 360px;
+  text-align:center;
+  box-shadow: 0 0 60px rgba(0,229,255,0.12), inset 0 1px 0 rgba(255,255,255,0.06);
+  backdrop-filter: blur(20px);
+  animation: lockAppear 0.6s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+@keyframes lockAppear {
+  from { transform:scale(0.8) translateY(30px); opacity:0; }
+  to   { transform:scale(1) translateY(0); opacity:1; }
+}
+.lock-icon {
+  font-size:3rem; margin-bottom:16px;
+  animation: pulse-lock 2s ease-in-out infinite;
+  display:block;
+}
+@keyframes pulse-lock {
+  0%,100% { text-shadow: 0 0 10px #00e5ff; transform:scale(1); }
+  50%      { text-shadow: 0 0 30px #00e5ff, 0 0 60px #7c3aed; transform:scale(1.08); }
+}
+.lock-box h2 {
+  font-family:'Orbitron',sans-serif;
+  font-size:1.3rem; letter-spacing:3px; color:var(--neon);
+  margin-bottom:24px; text-transform:uppercase;
+}
+.lock-input {
+  width:100%; padding:14px 18px;
+  background: rgba(0,229,255,0.06);
+  border: 1px solid var(--border);
+  border-radius:12px; color:var(--text);
+  font-family:'Rajdhani',sans-serif; font-size:1.1rem;
+  outline:none; transition:border 0.3s, box-shadow 0.3s;
+}
+.lock-input:focus {
+  border-color: var(--neon);
+  box-shadow: 0 0 0 3px rgba(0,229,255,0.15);
+}
+.lock-btn {
+  margin-top:14px; width:100%; padding:14px;
+  background: linear-gradient(90deg, var(--neon), var(--neon2));
+  border:none; border-radius:12px;
+  color:#000; font-family:'Orbitron',sans-serif;
+  font-size:0.9rem; font-weight:700; letter-spacing:2px;
+  cursor:pointer; transition:transform 0.2s, box-shadow 0.2s;
+}
+.lock-btn:hover { transform:translateY(-2px); box-shadow: 0 6px 30px rgba(0,229,255,0.4); }
+.lock-btn:active { transform:translateY(0); }
+.lock-error {
+  margin-top:12px; font-size:0.9rem; color:#ff4466;
+  min-height:20px; font-weight:600;
+  animation: shake 0.4s ease;
+}
+@keyframes shake {
+  0%,100% { transform:translateX(0); }
+  20%,60%  { transform:translateX(-6px); }
+  40%,80%  { transform:translateX(6px); }
+}
+
+/* ─── MAIN CONTENT ─── */
+#content { display:none; position:relative; z-index:2; }
+
+/* ─── NAV ─── */
+.nav {
+  position:sticky; top:16px;
+  margin:16px auto; max-width:1200px;
+  padding:14px 24px;
+  background: var(--glass);
+  border: 1px solid var(--border);
+  border-radius:20px;
+  display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+  backdrop-filter:blur(18px);
+  box-shadow: 0 4px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(0,229,255,0.05);
+  animation: slideDown 0.5s ease both;
+}
+@keyframes slideDown {
+  from { transform:translateY(-20px); opacity:0; }
+  to   { transform:translateY(0); opacity:1; }
+}
+.brand {
+  font-family:'Orbitron',sans-serif;
+  font-size:1rem; font-weight:900;
+  letter-spacing:2px; color:var(--neon);
+  text-shadow: 0 0 20px rgba(0,229,255,0.5);
+}
+.nav-links { margin-left:auto; display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+.nav-link {
+  padding:8px 16px; border-radius:999px;
+  text-decoration:none; color:rgba(200,240,255,0.7);
+  font-weight:600; font-size:0.9rem;
+  background:rgba(255,255,255,0.04);
+  border:1px solid rgba(255,255,255,0.06);
+  transition:all 0.2s;
+}
+.nav-link:hover { color:var(--neon); border-color:var(--border); background:rgba(0,229,255,0.06); }
+.tier-btn {
+  padding:8px 16px; border-radius:999px;
+  border:none; cursor:pointer;
+  font-family:'Orbitron',sans-serif; font-size:0.7rem;
+  font-weight:700; letter-spacing:1px;
+  transition:all 0.25s;
+}
+.tier-btn.t1 { background:linear-gradient(90deg,#00e5ff,#7c3aed); color:#fff; }
+.tier-btn.t2 { background:linear-gradient(90deg,#ffd700,#ff8c00); color:#000; }
+.tier-btn.t3 { background:linear-gradient(90deg,#ff00ff,#00ffff); color:#000; }
+.tier-btn:hover { transform:translateY(-2px); box-shadow:0 4px 20px rgba(0,229,255,0.35); }
+
+/* Badge indicator */
+.tier-badge {
+  display:inline-flex; align-items:center; gap:6px;
+  padding:6px 12px; border-radius:999px;
+  font-family:'Orbitron',sans-serif; font-size:0.65rem;
+  font-weight:700; letter-spacing:1px;
+  opacity:0; transform:scale(0.8);
+  transition:all 0.3s;
+}
+.tier-badge.show { opacity:1; transform:scale(1); }
+.tier-badge.t1 { background:rgba(0,229,255,0.15); border:1px solid #00e5ff; color:#00e5ff; }
+.tier-badge.t2 { background:rgba(255,215,0,0.15); border:1px solid #ffd700; color:#ffd700; }
+.tier-badge.t3 { background:rgba(255,0,255,0.15); border:1px solid #ff00ff; color:#ff00ff; animation:rainbow-glow 2s linear infinite; }
+@keyframes rainbow-glow {
+  0%,100% { box-shadow:0 0 10px #ff00ff; }
+  50%      { box-shadow:0 0 20px #00ffff; }
+}
+
+/* ─── HERO ─── */
+.hero {
+  text-align:center;
+  padding:60px 20px 20px;
+  max-width:1200px; margin:auto;
+}
+.hero-title {
+  font-family:'Orbitron',sans-serif;
+  font-size:clamp(2rem,5vw,3.5rem);
+  font-weight:900; letter-spacing:4px;
+  background:linear-gradient(90deg, var(--neon), var(--neon2), var(--neon3), var(--neon));
+  background-size:300% auto;
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+  animation:gradient-shift 4s linear infinite, heroFade 0.8s ease 0.2s both;
+  line-height:1.1;
+}
+@keyframes gradient-shift { to { background-position:300% center; } }
+@keyframes heroFade {
+  from { opacity:0; transform:translateY(20px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+.hero-sub {
+  margin-top:12px; font-size:1.1rem;
+  color:rgba(200,240,255,0.5); letter-spacing:2px;
+  text-transform:uppercase; font-weight:600;
+  animation:heroFade 0.8s ease 0.4s both;
+}
+
+/* ─── NEWS BOX ─── */
+.news-box {
+  max-width:560px; margin:32px auto;
+  background:var(--glass);
+  border:1px solid var(--border);
+  border-radius:18px; padding:22px 26px;
+  backdrop-filter:blur(14px);
+  animation:heroFade 0.8s ease 0.5s both;
+  position:relative; overflow:hidden;
+}
+.news-box::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:2px;
+  background:linear-gradient(90deg,transparent,var(--neon),var(--neon2),transparent);
+  animation:scan-line 3s ease-in-out infinite;
+}
+@keyframes scan-line {
+  0%,100% { opacity:0.3; } 50% { opacity:1; }
+}
+.news-box h2 {
+  font-family:'Orbitron',sans-serif; font-size:0.85rem;
+  letter-spacing:3px; color:var(--neon); margin-bottom:14px;
+  text-transform:uppercase;
+}
+.news-box p { font-size:1rem; line-height:1.6; color:rgba(200,240,255,0.8); }
+.news-box a { color:var(--neon3); font-weight:700; text-decoration:none; }
+.news-box a:hover { text-decoration:underline; }
+.news-box strong { color:#fff; }
+
+/* ─── CARDS GRID ─── */
+.cards-section {
+  max-width:1200px; margin:40px auto;
+  padding:0 20px 60px;
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(270px,1fr));
+  gap:20px;
+  animation:heroFade 0.8s ease 0.6s both;
+}
+
+/* ─── CARD ─── */
+.card {
+  background:var(--glass);
+  border:1px solid var(--border);
+  border-radius:20px; padding:24px;
+  backdrop-filter:blur(14px);
+  position:relative; overflow:hidden;
+  transition:transform 0.3s, box-shadow 0.3s;
+  cursor:default;
+  display:flex; flex-direction:column; gap:10px;
+}
+.card::before {
+  content:''; position:absolute; inset:0;
+  background:radial-gradient(circle at 50% 0%, rgba(0,229,255,0.06), transparent 60%);
+  pointer-events:none;
+}
+.card:hover {
+  transform:translateY(-6px) scale(1.01);
+  box-shadow:0 16px 60px rgba(0,229,255,0.15), 0 0 0 1px rgba(0,229,255,0.2);
+}
+.card-tag {
+  display:inline-block;
+  padding:3px 10px; border-radius:999px;
+  font-size:0.7rem; font-weight:700; letter-spacing:1px;
+  text-transform:uppercase; align-self:flex-start;
+}
+.tag-free    { background:rgba(6,255,165,0.15); border:1px solid #06ffa5; color:#06ffa5; }
+.tag-prem    { background:rgba(0,229,255,0.12); border:1px solid #00e5ff; color:#00e5ff; }
+.tag-premprem{ background:rgba(255,215,0,0.12); border:1px solid #ffd700; color:#ffd700; }
+
+.card-title {
+  font-family:'Orbitron',sans-serif;
+  font-size:1.1rem; font-weight:900;
+  letter-spacing:2px; color:#fff;
+}
+.card-desc {
+  font-size:0.9rem; color:rgba(200,240,255,0.55);
+  line-height:1.5; flex:1;
+}
+.card-btn {
+  margin-top:6px; padding:12px 0;
+  width:100%; border:none; border-radius:12px;
+  font-family:'Orbitron',sans-serif;
+  font-size:0.8rem; font-weight:700; letter-spacing:2px;
+  cursor:pointer; transition:all 0.25s; position:relative; overflow:hidden;
+}
+.card-btn::after {
+  content:''; position:absolute; inset:0;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,0.2),transparent);
+  transform:translateX(-100%); transition:transform 0.4s;
+}
+.card-btn:hover::after { transform:translateX(100%); }
+.btn-free     { background:linear-gradient(90deg,#06ffa5,#00c8ff); color:#001; }
+.btn-prem     { background:linear-gradient(90deg,#00e5ff,#7c3aed); color:#fff; }
+.btn-premprem { background:linear-gradient(90deg,#ffd700,#ff8c00); color:#000; }
+.card-btn:hover { transform:translateY(-2px); box-shadow:0 6px 24px rgba(0,229,255,0.3); }
+.card-btn:active { transform:translateY(0); }
+
+/* Pizza spin */
+.card.pizza .card-title::before {
+  content:'🍕 '; animation:spin-pizza 3s linear infinite; display:inline-block;
+}
+@keyframes spin-pizza { to { transform:rotate(360deg); } }
+
+/* ─── PLAY OVERLAY ─── */
+#play-overlay {
+  display:none; position:fixed; inset:0; z-index:8000;
+  background:rgba(0,0,0,0.95); flex-direction:column;
+  align-items:center; justify-content:center;
+  animation:fadeIn 0.3s ease;
+}
+#play-overlay.active { display:flex; }
+@keyframes fadeIn { from{opacity:0;} to{opacity:1;} }
+#play-iframe { width:100%; height:100%; border:none; }
+#exit-play {
+  position:absolute; top:20px; right:20px;
+  padding:10px 20px; border:none; border-radius:12px;
+  background:#ff2244; color:#fff;
+  font-family:'Orbitron',sans-serif; font-size:0.75rem;
+  font-weight:700; letter-spacing:2px; cursor:pointer;
+  transition:transform 0.2s, box-shadow 0.2s; z-index:1;
+}
+#exit-play:hover { transform:scale(1.05); box-shadow:0 4px 20px rgba(255,34,68,0.5); }
+
+/* ─── TRIPLE PREMIUM CELEBRATION ─── */
+#mega-overlay {
+  display:none; position:fixed; inset:0; z-index:9500;
+  background:rgba(0,0,0,0.92);
+  align-items:center; justify-content:center; flex-direction:column;
+}
+#mega-overlay.active { display:flex; }
+#confetti-canvas { position:absolute; inset:0; width:100%; height:100%; }
+.mega-title {
+  font-family:'Orbitron',sans-serif; font-size:clamp(2rem,5vw,4rem);
+  font-weight:900; text-align:center; z-index:1;
+  background:linear-gradient(90deg,#ff00ff,#00ffff,#ff00ff);
+  background-size:200% auto;
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+  animation:gradient-shift 1.5s linear infinite, pop-in 0.5s ease both;
+  text-shadow:none;
+}
+@keyframes pop-in {
+  from { transform:scale(0.5); opacity:0; }
+  to   { transform:scale(1); opacity:1; }
+}
+#close-mega {
+  margin-top:32px; z-index:1; padding:14px 32px;
+  border:none; border-radius:12px; background:#ff0033;
+  color:#fff; font-family:'Orbitron',sans-serif;
+  font-size:0.8rem; font-weight:700; letter-spacing:2px;
+  cursor:pointer; transition:transform 0.2s;
+}
+#close-mega:hover { transform:scale(1.05); }
+
+/* ─── NOTIFICATION TOAST ─── */
+#toast {
+  position:fixed; bottom:80px; left:50%; transform:translateX(-50%) translateY(20px);
+  background:var(--glass); border:1px solid var(--border);
+  backdrop-filter:blur(20px); border-radius:14px;
+  padding:14px 24px; z-index:9999;
+  font-family:'Orbitron',sans-serif; font-size:0.8rem; letter-spacing:1px;
+  color:var(--neon); text-align:center;
+  opacity:0; transition:all 0.4s ease; pointer-events:none;
+  white-space:nowrap;
+}
+#toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+/* ─── PANIC ─── */
+#panic-btn {
+  position:fixed; bottom:22px; right:22px; z-index:9999;
+  padding:10px 18px; border:none; border-radius:12px;
+  background:#ff0033; color:#fff;
+  font-family:'Orbitron',sans-serif; font-size:0.7rem;
+  font-weight:700; letter-spacing:2px; cursor:pointer;
+  transition:transform 0.2s, box-shadow 0.2s;
+}
+#panic-btn:hover { transform:scale(1.05); box-shadow:0 4px 20px rgba(255,0,51,0.5); animation:panic-shake 0.4s ease; }
+@keyframes panic-shake {
+  0%,100%{transform:scale(1.05) rotate(0deg);}
+  25%{transform:scale(1.05) rotate(-3deg);}
+  75%{transform:scale(1.05) rotate(3deg);}
+}
+
+/* ─── PREMIUM STATE STYLES ─── */
+body.prem-1 { --neon:#00e5ff; }
+body.prem-2 { --neon:#ffd700; --neon2:#ff8c00; }
+body.prem-3 {
+  animation:hue-cycle 6s linear infinite;
+}
+@keyframes hue-cycle { to { filter:hue-rotate(360deg); } }
+body.prem-3 .card { animation:rainbow-border 3s linear infinite; }
+@keyframes rainbow-border {
+  0%   { border-color:rgba(255,0,255,0.5); box-shadow:0 0 20px rgba(255,0,255,0.2); }
+  33%  { border-color:rgba(0,255,255,0.5); box-shadow:0 0 20px rgba(0,255,255,0.2); }
+  66%  { border-color:rgba(255,255,0,0.5); box-shadow:0 0 20px rgba(255,255,0,0.2); }
+  100% { border-color:rgba(255,0,255,0.5); box-shadow:0 0 20px rgba(255,0,255,0.2); }
+}
+
+/* ─── MODAL ─── */
+.modal-overlay {
+  display:none; position:fixed; inset:0; z-index:9200;
+  background:rgba(0,0,0,0.7); backdrop-filter:blur(6px);
+  align-items:center; justify-content:center;
+}
+.modal-overlay.active { display:flex; }
+.modal-box {
+  background:linear-gradient(135deg,rgba(6,15,35,0.95),rgba(20,10,40,0.95));
+  border:1px solid var(--border); border-radius:20px;
+  padding:36px; width:340px; text-align:center;
+  box-shadow:0 0 60px rgba(0,229,255,0.15);
+  animation:lockAppear 0.4s ease both;
+}
+.modal-box h3 {
+  font-family:'Orbitron',sans-serif; font-size:1rem;
+  letter-spacing:2px; color:var(--neon); margin-bottom:20px;
+}
+.modal-box input {
+  width:100%; padding:12px 16px;
+  background:rgba(0,229,255,0.05);
+  border:1px solid var(--border); border-radius:10px;
+  color:var(--text); font-family:'Rajdhani',sans-serif;
+  font-size:1.05rem; outline:none;
+  transition:border 0.2s, box-shadow 0.2s;
+}
+.modal-box input:focus { border-color:var(--neon); box-shadow:0 0 0 3px rgba(0,229,255,0.12); }
+.modal-actions { display:flex; gap:10px; margin-top:14px; }
+.modal-confirm {
+  flex:1; padding:12px; border:none; border-radius:10px;
+  background:linear-gradient(90deg,var(--neon),var(--neon2));
+  color:#000; font-family:'Orbitron',sans-serif;
+  font-size:0.75rem; font-weight:700; cursor:pointer;
+  transition:transform 0.2s; letter-spacing:1px;
+}
+.modal-cancel {
+  flex:1; padding:12px; border:1px solid rgba(255,255,255,0.1);
+  border-radius:10px; background:transparent;
+  color:var(--text); font-family:'Orbitron',sans-serif;
+  font-size:0.75rem; cursor:pointer; letter-spacing:1px;
+  transition:background 0.2s;
+}
+.modal-cancel:hover { background:rgba(255,255,255,0.05); }
+.modal-err { margin-top:10px; color:#ff4466; font-size:0.85rem; min-height:18px; }
+</style>
+</head>
+<body>
+
+<!-- STARFIELD -->
+<canvas id="stars"></canvas>
+
+<!-- ═══════════════ PASSWORD LOCK ═══════════════ -->
+<div id="lock-overlay">
+  <div class="lock-box">
+    <span class="lock-icon">🔐</span>
+    <h2>ACCESS CODE</h2>
+    <input class="lock-input" id="main-pass" type="password" placeholder="Enter password…" autocomplete="off">
+    <button class="lock-btn" id="main-enter">AUTHENTICATE</button>
+    <div class="lock-error" id="main-err"></div>
+  </div>
+</div>
+
+<!-- ═══════════════ MAIN CONTENT ═══════════════ -->
+<div id="content">
+  <!-- NAV -->
+  <nav class="nav">
+    <div class="brand">ST4S</div>
+    <a class="nav-link" href="https://kikikian.github.io/Even-Better-CC-Ported" target="_blank">Official</a>
+    <a class="nav-link" href="https://sheets.raspberryip.com" target="_blank">Tools</a>
+    <a class="nav-link" href="https://checkoutoursite.carrd.co" target="_blank">About</a>
+    <a class="nav-link" href="https://github.com/factoryoverlord7601" target="_blank">GitHub</a>
+    <div class="nav-links">
+      <span class="tier-badge t1" id="badge1">✦ PREMIUM</span>
+      <span class="tier-badge t2" id="badge2">★ PREMIUM²</span>
+      <span class="tier-badge t3" id="badge3">⚡ TRIPLE</span>
+      <button class="tier-btn t1" id="btn-prem">Premium</button>
+      <button class="tier-btn t2" id="btn-premprem">Premium²</button>
+      <button class="tier-btn t3" id="btn-triple">Triple</button>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <h1 class="hero-title">StudyTools4School</h1>
+    <p class="hero-sub">Your gateway to educational tools</p>
+    <div class="news-box">
+      <h2>📡 Latest News</h2>
+      <p>Contact for Premium access:<br><strong>aaron.lu.marin@gmail.com</strong></p>
+      <p style="margin-top:10px">⭐ Site of the Week: <a href="https://deepakrummy.github.io" target="_blank">deepakrummy.github.io</a></p>
+    </div>
+  </section>
+
+  <!-- CARDS -->
+  <section class="cards-section">
+
+    <div class="card">
+      <span class="card-tag tag-free">Free</span>
+      <div class="card-title">OVO</div>
+      <div class="card-desc">OVO is a free platform available to all users — no unlock needed.</div>
+      <button class="card-btn btn-free" onclick="openPlay('https://arjun99ab.github.io/ovo/')">▶ PLAY</button>
+    </div>
+
+    <div class="card">
+      <span class="card-tag tag-free">Free</span>
+      <div class="card-title">LearnCoding247</div>
+      <div class="card-desc">A free pizza edition coding resource for all users.</div>
+      <button class="card-btn btn-free" onclick="openPlay('https://francois.spring-roll.herman.schmeggy.micro.lefty.jbworks.com/')">▶ PLAY</button>
+    </div>
+
+    <div class="card pizza">
+      <span class="card-tag tag-prem">Premium</span>
+      <div class="card-title">Pizza Edition</div>
+      <div class="card-desc">Many pizza edition links — unlock with Premium.</div>
+      <button class="card-btn btn-prem" onclick="unlockPlay('pizza')">▶ PLAY</button>
+    </div>
+
+    <div class="card">
+      <span class="card-tag tag-prem">Premium</span>
+      <div class="card-title">C2LL</div>
+      <div class="card-desc">Premium version CCPorted — an enhanced experience for premium members.</div>
+      <button class="card-btn btn-prem" onclick="unlockPlay('c2ll')">▶ PLAY</button>
+    </div>
+
+    <div class="card">
+      <span class="card-tag tag-premprem">Premium²</span>
+      <div class="card-title">C2LO</div>
+      <div class="card-desc">Advanced site for games. Requires both Premium tiers unlocked.</div>
+      <button class="card-btn btn-premprem" onclick="unlockPlay('c2lo')">▶ PLAY</button>
+    </div>
+
+    <div class="card">
+      <span class="card-tag tag-premprem">Premium²</span>
+      <div class="card-title">C2LO Extra 1</div>
+      <div class="card-desc">Extra C2LO fullscreen content — Premium² required.</div>
+      <button class="card-btn btn-premprem" onclick="unlockPlay('c2lo1')">▶ PLAY</button>
+    </div>
+
+    <div class="card">
+      <span class="card-tag tag-premprem">Premium²</span>
+      <div class="card-title">C2LO Extra 2</div>
+      <div class="card-desc">Extra C2LO fullscreen content — Premium² required.</div>
+      <button class="card-btn btn-premprem" onclick="unlockPlay('c2lo2')">▶ PLAY</button>
+    </div>
+
+    <div class="card">
+      <span class="card-tag tag-premprem">Premium²</span>
+      <div class="card-title">C2LO Extra 3</div>
+      <div class="card-desc">Extra C2LO fullscreen content — Premium² required.</div>
+      <button class="card-btn btn-premprem" onclick="unlockPlay('c2lo3')">▶ PLAY</button>
+    </div>
+
+    <div class="card">
+      <span class="card-tag tag-premprem">Premium²</span>
+      <div class="card-title">C2LO Extra 4</div>
+      <div class="card-desc">Extra C2LO fullscreen content — Premium² required.</div>
+      <button class="card-btn btn-premprem" onclick="unlockPlay('c2lo4')">▶ PLAY</button>
+    </div>
+
+    <div class="card">
+      <span class="card-tag tag-premprem">Premium²</span>
+      <div class="card-title">Interstellar</div>
+      <div class="card-desc">Interstellar proxy — definitely not stolen from kikikian (different link).</div>
+      <button class="card-btn btn-premprem" onclick="unlockPlay('c2lo5')">▶ PLAY</button>
+    </div>
+
+  </section>
+</div>
+
+<!-- ═══════════════ PLAY OVERLAY ═══════════════ -->
+<div id="play-overlay">
+  <button id="exit-play">✕ EXIT</button>
+  <iframe id="play-iframe" src="about:blank" allow="fullscreen"></iframe>
+</div>
+
+<!-- ═══════════════ TRIPLE PREMIUM CELEBRATION ═══════════════ -->
+<div id="mega-overlay">
+  <canvas id="confetti-canvas"></canvas>
+  <div class="mega-title">🎉 TRIPLE PREMIUM UNLOCKED! 🎉</div>
+  <button id="close-mega">CLOSE</button>
+</div>
+
+<!-- ═══════════════ PREMIUM MODAL ═══════════════ -->
+<div class="modal-overlay" id="prem-modal">
+  <div class="modal-box">
+    <h3 id="modal-title">ENTER CODE</h3>
+    <input type="password" id="modal-input" placeholder="Password…" autocomplete="off">
+    <div class="modal-actions">
+      <button class="modal-cancel" id="modal-cancel">CANCEL</button>
+      <button class="modal-confirm" id="modal-confirm">UNLOCK</button>
+    </div>
+    <div class="modal-err" id="modal-err"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- PANIC -->
+<button id="panic-btn">⚠ PANIC</button>
+
+<!-- ═══════════════ SCRIPTS ═══════════════ -->
+<script>
+(async () => {
+"use strict";
+
+// ─── SHA-256 HELPER ───
+async function sha256(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+// ─── PRE-HASHED PASSWORDS (SHA-256) ───
+// Original passwords are never stored in plaintext
+const H = {
+  main:   await sha256("gokikikian"),
+  prem:   await sha256("ohyeahhawks"),
+  plus:   await sha256("boss"),
+  triple: await sha256("triplespecial")
+};
+
+// ─── STATE ───
+const S = { prem:false, plus:false, triple:false };
+
+// ─── STARFIELD ───
+(function initStars() {
+  const canvas = document.getElementById('stars');
+  const ctx = canvas.getContext('2d');
+  let stars = [];
+  function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    stars = Array.from({length:180}, () => ({
+      x: Math.random()*canvas.width,
+      y: Math.random()*canvas.height,
+      r: Math.random()*1.5+0.3,
+      speed: Math.random()*0.3+0.05,
+      alpha: Math.random()
+    }));
+  }
+  resize();
+  window.addEventListener('resize', resize);
+  function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    stars.forEach(s => {
+      s.alpha += (Math.random()-0.5)*0.02;
+      s.alpha = Math.max(0.1, Math.min(0.9, s.alpha));
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
+      ctx.fillStyle = `rgba(180,220,255,${s.alpha})`;
+      ctx.fill();
+      s.y += s.speed;
+      if(s.y > canvas.height) { s.y = 0; s.x = Math.random()*canvas.width; }
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+// ─── TOAST ───
+function toast(msg, duration=2800) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), duration);
+}
+
+// ─── APPLY TIER VISUALS ───
+function applyTier() {
+  document.body.classList.toggle('prem-1', S.prem);
+  document.body.classList.toggle('prem-2', S.plus);
+  document.body.classList.toggle('prem-3', S.triple);
+  document.getElementById('badge1').classList.toggle('show', S.prem);
+  document.getElementById('badge2').classList.toggle('show', S.plus);
+  document.getElementById('badge3').classList.toggle('show', S.triple);
+}
+
+// ─── MAIN PASSWORD ───
+const lockOverlay = document.getElementById('lock-overlay');
+const mainPass    = document.getElementById('main-pass');
+const mainErr     = document.getElementById('main-err');
+
+document.getElementById('main-enter').onclick = async () => {
+  const h = await sha256(mainPass.value.trim());
+  if(h === H.main) {
+    lockOverlay.style.animation = 'fadeOut 0.4s ease forwards';
+    lockOverlay.style.pointerEvents = 'none';
+    document.getElementById('content').style.display = 'block';
+    setTimeout(() => lockOverlay.style.display = 'none', 400);
+  } else {
+    mainErr.textContent = 'Incorrect password.';
+    mainErr.style.animation = 'none';
+    requestAnimationFrame(() => mainErr.style.animation = 'shake 0.4s ease');
+    setTimeout(() => mainErr.textContent='', 2500);
+  }
+};
+mainPass.addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('main-enter').click(); });
+
+// ─── PREMIUM MODAL SYSTEM ───
+const modal      = document.getElementById('prem-modal');
+const modalTitle = document.getElementById('modal-title');
+const modalInput = document.getElementById('modal-input');
+const modalErr   = document.getElementById('modal-err');
+let modalResolve = null;
+
+function openModal(title) {
+  modalTitle.textContent = title;
+  modalInput.value = '';
+  modalErr.textContent = '';
+  modal.classList.add('active');
+  setTimeout(() => modalInput.focus(), 100);
+  return new Promise(res => { modalResolve = res; });
+}
+function closeModal(val) {
+  modal.classList.remove('active');
+  if(modalResolve) { modalResolve(val); modalResolve=null; }
+}
+document.getElementById('modal-cancel').onclick = () => closeModal(null);
+document.getElementById('modal-confirm').onclick = async () => {
+  const h = await sha256(modalInput.value.trim());
+  closeModal(h);
+};
+modalInput.addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('modal-confirm').click(); });
+
+// ─── TIER UNLOCK ───
+document.getElementById('btn-prem').onclick = async () => {
+  const h = await openModal('PREMIUM CODE');
+  if(!h) return;
+  if(h === H.prem) { S.prem=true; applyTier(); toast('✦ Premium unlocked!'); }
+  else { modalErr.textContent='Wrong password.'; }
+};
+
+document.getElementById('btn-premprem').onclick = async () => {
+  if(!S.prem) { toast('Unlock Premium first!'); return; }
+  const h = await openModal('PREMIUM² CODE');
+  if(!h) return;
+  if(h === H.plus) { S.plus=true; applyTier(); toast('★ Premium² unlocked!'); }
+  else { modalErr.textContent='Wrong password.'; }
+};
+
+document.getElementById('btn-triple').onclick = async () => {
+  const h = await openModal('TRIPLE PREMIUM CODE');
+  if(!h) return;
+  if(h === H.triple) {
+    S.prem=S.plus=S.triple=true; applyTier(); startConfetti(); toast('⚡ TRIPLE PREMIUM UNLOCKED!', 4000);
+  } else { modalErr.textContent='Not the final boss.'; }
+};
+
+// ─── PLAY ───
+const playOverlay = document.getElementById('play-overlay');
+const playIframe  = document.getElementById('play-iframe');
+window.openPlay = url => { playIframe.src=url; playOverlay.classList.add('active'); };
+window.unlockPlay = site => {
+  const urls = {
+    c2ll:  'https://haimio.vercel.app/',
+    c2lo:  'https://aslapprovedproxy.vercel.app/',
+    c2lo1: 'https://aslapprovedproxy.vercel.app/c2lo1',
+    c2lo2: 'https://aslapprovedproxy.vercel.app/c2lo2',
+    c2lo3: 'https://aslapprovedproxy.vercel.app/c2lo3',
+    c2lo4: 'https://aslapprovedproxy.vercel.app/c2lo4',
+    c2lo5: 'https://aslapprovedproxy.vercel.app/',
+    pizza: null
+  };
+  if(site === 'c2ll' || site === 'pizza') {
+    if(!S.prem && !S.triple) { toast('🔒 Requires Premium!'); return; }
+    if(site === 'pizza') {
+      window.open('https://studytools4school.neocities.org/Mi%20dormitorio%20esta%20ebcima%20del%20bano%20y%20es%20grande.pdf','_blank');
+      return;
+    }
+  } else {
+    if((!S.prem || !S.plus) && !S.triple) { toast('🔒 Requires Premium + Premium²!'); return; }
+  }
+  openPlay(urls[site]);
+};
+document.getElementById('exit-play').onclick = () => {
+  playOverlay.classList.remove('active');
+  setTimeout(() => playIframe.src='about:blank', 300);
+};
+
+// ─── CONFETTI ───
+function startConfetti() {
+  const mega   = document.getElementById('mega-overlay');
+  const canvas = document.getElementById('confetti-canvas');
+  const ctx    = canvas.getContext('2d');
+  canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+  mega.classList.add('active');
+  const colors = ['#ff00ff','#00ffff','#ffd700','#ff4444','#44ff44','#4488ff'];
+  let particles = Array.from({length:300}, () => ({
+    x: Math.random()*canvas.width,
+    y: -20, size: Math.random()*8+4,
+    color: colors[Math.floor(Math.random()*colors.length)],
+    speedY: Math.random()*4+2,
+    speedX: (Math.random()-0.5)*3,
+    rot: Math.random()*360, rotSpeed: (Math.random()-0.5)*8
+  }));
+  let start=Date.now();
+  function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    particles.forEach(p => {
+      ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot*Math.PI/180);
+      ctx.fillStyle=p.color; ctx.fillRect(-p.size/2,-p.size/2,p.size,p.size);
+      ctx.restore();
+      p.y+=p.speedY; p.x+=p.speedX; p.rot+=p.rotSpeed;
+    });
+    if(Date.now()-start < 4000) requestAnimationFrame(draw);
+    else { mega.classList.remove('active'); ctx.clearRect(0,0,canvas.width,canvas.height); }
+  }
+  draw();
+}
+document.getElementById('close-mega').onclick = () => document.getElementById('mega-overlay').classList.remove('active');
+
+// ─── PANIC ───
+document.getElementById('panic-btn').onclick = () => location.reload();
+
+// ─── KEYBOARD SHORTCUT (Escape closes play) ───
+document.addEventListener('keydown', e => {
+  if(e.key==='Escape' && playOverlay.classList.contains('active')) {
+    playOverlay.classList.remove('active');
+    setTimeout(() => playIframe.src='about:blank', 300);
+  }
+});
+
+})();
+
+// CSS fadeOut for lock overlay
+const style = document.createElement('style');
+style.textContent = `@keyframes fadeOut { to { opacity:0; transform:scale(1.03); } }`;
+document.head.appendChild(style);
+</script>
+</body>
+</html>
